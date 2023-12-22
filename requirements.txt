@@ -1,0 +1,5 @@
+python-dotenv
+requests
+billboard.py
+google-api-python-client
+pytube
