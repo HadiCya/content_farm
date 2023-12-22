@@ -4,3 +4,5 @@ billboard.py
 google-api-python-client
 pytube
 moviepy
+pillow
+opencv-python
