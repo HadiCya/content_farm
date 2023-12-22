@@ -152,6 +152,8 @@ cython_debug/
 #.idea/
 
 .DS_Store
-/assets
+/assets/images
+/assets/snippets
+/assets/videos
 /final_videos
 .DS_Store
