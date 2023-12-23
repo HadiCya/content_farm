@@ -2,7 +2,11 @@ python-dotenv
 requests
 billboard.py
 google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
 pytube
 moviepy
-pillow
+pillow==9.5.0
 opencv-python
+urllib3
+tiktok-uploader

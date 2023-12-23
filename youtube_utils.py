@@ -7,14 +7,14 @@ from pathlib import Path
 
 # TODO: Optimize video searching to work in batches, both 1 and 50 results cost 100 tokens (Low Priority)
 def search_video(title, maxResults=1):
-    load_dotenv()
+    load_dotenv(override=True)
     api_key = os.getenv("YOUTUBE_KEY")
 
     youtube = build('youtube', 'v3',
-                    api_key)
+                    developerKey=api_key)
 
     request = youtube.search().list(q=title,
-                                    part='snippet', type='video', maxResults=maxResults)
+                                    part='snippet', type='video', maxResults=maxResults, videoDuration='medium')
     res = request.execute()
     urls = []
     for video in res['items']:
