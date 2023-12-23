@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . /app
 
-RUN mkdir assets && mkdir final_videos && mkdir assets/images && mkdir assets/snippets && mkdir assets/videos
+RUN mkdir final_videos && mkdir assets/images && mkdir assets/snippets && mkdir assets/videos
 
 RUN apt-get update && apt-get install -y wget unzip && \
     wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
