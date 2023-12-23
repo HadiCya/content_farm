@@ -1,9 +1,11 @@
 import json
+import os
 import re
 import urllib.request
 from PIL import Image
 
-JSON_FILE = 'release.json'
+OUTPUT_FILE_JSON = 'release.json'
+CONFIG_FILE_JSON = 'config.json'
 
 
 def remove_parentheses(text):
@@ -24,21 +26,30 @@ def download_image(url, image_file_path, size):
 
 
 def add_to_json(output_file_name, artist_name):
-    videos = read_json()
+    videos = read_json(OUTPUT_FILE_JSON)
 
     videos.append({
         'video': output_file_name,
         'description': f"How many did you get?? #{artist_name.replace(' ', '').lower()} #guessthesong #songquiz #quiz"
     })
 
-    with open(JSON_FILE, 'w', encoding='utf-8') as f:
+    with open(OUTPUT_FILE_JSON, 'w', encoding='utf-8') as f:
         json.dump(videos, f, ensure_ascii=False, indent=4)
 
 
-def read_json():
+def read_json(file_name):
     try:
-        with open(JSON_FILE, 'r') as f:
+        with open(file_name, 'r') as f:
             return json.load(f)
     except:
         print("No Data Found")
         return []
+
+
+def create_asset_directories():
+    config_data = read_json(CONFIG_FILE_JSON)
+    directories = ['assets/images', 'assets/snippets',
+                   'assets/videos', 'final_videos']
+
+    for dir in directories:
+        os.makedirs(f"{config_data['asset_file_path']}{dir}", exist_ok=True)

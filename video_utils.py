@@ -20,7 +20,12 @@ FONT_SIZE = 90
 INTRO_DURATION = 2
 CHARACTER_WRAP = 20
 
-FONT_PATH = "assets/fonts/Roboto-Regular.ttf"
+
+CONFIG_FILE_JSON = 'config.json'
+
+config_data = read_json(CONFIG_FILE_JSON)
+
+FONT_PATH = "template/Roboto-Regular.ttf"
 
 
 def create_countdown_clip(number):
@@ -28,10 +33,10 @@ def create_countdown_clip(number):
 
 
 def create_intro(artist_image_url, artist_name, artist_id, last_music_video, part_two=False):
-    image_file_path = f"assets/images/{artist_id}.jpeg"
+    image_file_path = f"{config_data['asset_file_path']}assets/images/{artist_id}.jpeg"
 
     background_clip = VideoFileClip(
-        f'assets/videos/{last_music_video}', audio=False)
+        f"{config_data['asset_file_path']}assets/videos/{last_music_video}", audio=False)
     max_start_time = max(0, background_clip.duration - INTRO_DURATION - 10)
     random_start_time = random.randint(0, int(max_start_time))
     background_clip = background_clip.subclip(
@@ -50,7 +55,7 @@ def create_intro(artist_image_url, artist_name, artist_id, last_music_video, par
     intro_clip = CompositeVideoClip(
         [background_clip, artist_image_clip, intro_text, artist_name_clip], size=SIZE).set_duration(INTRO_DURATION)
 
-    text_to_speech_file_path = f"assets/snippets/{artist_id}.mp3"
+    text_to_speech_file_path = f"{config_data['asset_file_path']}assets/snippets/{artist_id}.mp3"
 
     if os.path.isfile(text_to_speech_file_path):
         print("Text to Speech already downloaded!")
@@ -83,7 +88,7 @@ def create_artist_video(artist_name, token, split=True):
     download_video(f'{artist_name} Music Video', artist_id,
                    int(result['popularity']) // 18)
     artist_music_videos = [f for f in listdir(
-        f'assets/videos') if isfile(join(f'assets/videos', f))]
+        f"{config_data['asset_file_path']}assets/videos") if isfile(join(f"{config_data['asset_file_path']}assets/videos", f))]
     artist_music_videos = [
         f for f in artist_music_videos if f.startswith(artist_id + "-")]
 
@@ -98,7 +103,7 @@ def create_artist_video(artist_name, token, split=True):
         song_name = remove_parentheses(song['name'])
         song_id = song['id']
         song_image_url = song['album']['images'][0]['url']
-        image_file_path = f"assets/images/{song_id}.jpeg"
+        image_file_path = f"{config_data['asset_file_path']}assets/images/{song_id}.jpeg"
 
         # VISUAL COMPONENTS
 
@@ -110,7 +115,7 @@ def create_artist_video(artist_name, token, split=True):
         last_music_video = newly_selected_music_video
 
         background_clip = VideoFileClip(
-            f'assets/videos/{last_music_video}', audio=False)
+            f"{config_data['asset_file_path']}assets/videos/{last_music_video}", audio=False)
         max_start_time = max(0, background_clip.duration - DURATION - 10)
         random_start_time = random.randint(0, int(max_start_time))
         background_clip = background_clip.subclip(
@@ -143,12 +148,15 @@ def create_artist_video(artist_name, token, split=True):
         download_audio(f"{song_name} by {artist_name} Audio", song_id)
         random_num = random.randint(20, 50-DURATION)
         audio_clip = AudioFileClip(
-            f'assets/snippets/{song_id}.mp3').subclip(random_num, random_num+DURATION).set_duration(DURATION)
+            f"{config_data['asset_file_path']}assets/snippets/{song_id}.mp3").subclip(random_num, random_num+DURATION).set_duration(DURATION)
 
         # Create Sound Effects
-        checkmark_sound = AudioFileClip('assets/template/checkmark.mp3')
-        clock_sound = AudioFileClip('assets/template/clock.mp3')
-        swipe_sound = AudioFileClip('assets/template/swipe.mp3')
+        checkmark_sound = AudioFileClip(
+            f"template/checkmark.mp3")
+        clock_sound = AudioFileClip(
+            f"template/clock.mp3")
+        swipe_sound = AudioFileClip(
+            f"template/swipe.mp3")
 
         # ASSEMBLING EVERYTHING AND STORING INTO FINAL ARRAY
 
@@ -189,7 +197,7 @@ def process_clips(clips, artist_name, intro_clip, suffix=None):
 
     # Concatenate and write the final video file
     final_clip = concatenate_videoclips(slided_clips)
-    output_file_name = f"final_videos/{artist_name.replace(' ', '')}{f'-{suffix}' if suffix else ''}.mp4"
+    output_file_name = f"{config_data['asset_file_path']}final_videos/{artist_name.replace(' ', '')}{f'-{suffix}' if suffix else ''}.mp4"
     final_clip.write_videofile(
         output_file_name, audio=True, audio_codec="aac", fps=FPS)
     add_to_json(output_file_name, artist_name)

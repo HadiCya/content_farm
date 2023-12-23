@@ -4,8 +4,16 @@ from apiclient.discovery import build
 from pytube import YouTube
 from pathlib import Path
 
+from utils import read_json
+
+
+CONFIG_FILE_JSON = 'config.json'
+
+config_data = read_json(CONFIG_FILE_JSON)
 
 # TODO: Optimize video searching to work in batches, both 1 and 50 results cost 100 tokens (Low Priority)
+
+
 def search_video(title, maxResults=1):
     load_dotenv(override=True)
     api_key = os.getenv("YOUTUBE_KEY")
@@ -27,7 +35,7 @@ def download_audio(title, id):
     print(f'Attempting Download of {title}')
     FILE_NAME = f'{id}.mp3'
 
-    SAVE_PATH = "assets/snippets"
+    SAVE_PATH = f"{config_data['asset_file_path']}assets/snippets"
 
     if os.path.isfile(f"{SAVE_PATH}/{FILE_NAME}"):
         print("Audio already downloaded!")
@@ -51,7 +59,7 @@ def download_video(title, id, maxVideos):
     print(
         f'Attempting Download of {maxVideos} {title}{"s" if maxVideos > 1 else ""}')
 
-    SAVE_PATH = "assets/videos"
+    SAVE_PATH = f"{config_data['asset_file_path']}assets/videos"
 
     if os.path.isfile(f"{SAVE_PATH}/{id}-{maxVideos-1}.mp4"):
         print("Videos already downloaded!")
