@@ -2,6 +2,8 @@ import os
 from dotenv import load_dotenv
 from tiktok_uploader.upload import upload_videos
 from tiktok_uploader.auth import AuthBackend
+from selenium.webdriver.chrome.options import Options
+
 
 from utils import *
 
@@ -16,9 +18,14 @@ def upload_to_tiktok():
     tiktok_password = os.getenv("TIKTOK_PASSWORD")
     print(tiktok_username, tiktok_password)
 
+    options = Options()
+    options.add_argument('--no-sandbox')
+    options.add_argument('--headless')
+    options.add_argument('--disable-dev-shm-usage')
+
     auth = AuthBackend(username=tiktok_username,
                        password=tiktok_password, cookies='cookies.txt')
-    upload_videos(videos=videos, auth=auth, headless=True)
+    upload_videos(videos=videos, auth=auth, headless=True, options=options)
 
 
 def upload_to_youtube():
