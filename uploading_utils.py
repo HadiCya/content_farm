@@ -19,10 +19,20 @@ def upload_to_tiktok():
     print(tiktok_username, tiktok_password)
 
     options = Options()
+    options.add_argument('--disable-blink-features=AutomationControlled')
+    options.add_argument('--profile-directory=Default')
     options.add_argument('--no-sandbox')
     options.add_argument('--headless')
     options.add_argument('--disable-dev-shm-usage')
 
     auth = AuthBackend(username=tiktok_username,
                        password=tiktok_password, cookies='cookies.txt')
-    print(upload_videos(videos=videos, auth=auth, headless=True, options=options))
+    failed = upload_videos(videos=videos, auth=auth,
+                           headless=True, options=options)
+
+    if failed != []:
+        alert_failure(failed)
+
+
+def alert_failure(failed):
+    print(f"{len(failed)} Uploads failed!")
