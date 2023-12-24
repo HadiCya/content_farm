@@ -5,9 +5,11 @@ from tiktok_uploader.auth import AuthBackend
 
 from utils import *
 
+OUTPUT_FILE_JSON = 'release.json'
+
 
 def upload_to_tiktok():
-    videos = read_json()
+    videos = read_json(OUTPUT_FILE_JSON)
 
     load_dotenv(override=True)
     tiktok_username = os.getenv("TIKTOK_USERNAME")

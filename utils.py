@@ -26,7 +26,7 @@ def download_image(url, image_file_path, size):
 
 
 def add_to_json(output_file_name, artist_name):
-    videos = read_json(OUTPUT_FILE_JSON)
+    videos = []  # read_json(OUTPUT_FILE_JSON)
 
     videos.append({
         'video': output_file_name,
