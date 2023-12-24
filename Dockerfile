@@ -2,8 +2,6 @@ FROM python:3.9
 
 WORKDIR /app
 
-COPY . /app
-
 RUN apt-get update && apt-get install -y wget unzip && \
     wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
     apt install -y ./google-chrome-stable_current_amd64.deb && \
@@ -25,6 +23,8 @@ RUN mkdir -p /tmp/distr && \
     ldconfig /usr/local/lib && \
     cd /tmp && \
     rm -rf distr
+
+COPY . /app
 
 RUN pip install -r requirements.txt
 

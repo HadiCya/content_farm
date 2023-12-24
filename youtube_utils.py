@@ -22,7 +22,7 @@ def search_video(title, maxResults=1):
                     developerKey=api_key)
 
     request = youtube.search().list(q=title,
-                                    part='snippet', type='video', maxResults=maxResults, videoDuration='medium')
+                                    part='snippet', type='video', maxResults=maxResults, safeSearch='strict')
     res = request.execute()
     urls = []
     for video in res['items']:
@@ -70,10 +70,6 @@ def download_video(title, id, maxVideos):
         for i, url in enumerate(urls):
             yt = YouTube(url)
             print('Title:', yt.title)
-
-            if yt.age_restricted:
-                print(f'Skipping age-restricted video: {yt.title}')
-                continue
 
             video_stream = yt.streams.get_highest_resolution()
 
