@@ -30,9 +30,4 @@ def upload_to_tiktok():
     failed = upload_videos(videos=videos, auth=auth,
                            headless=True, options=options)
 
-    if failed != []:
-        alert_failure(failed)
-
-
-def alert_failure(failed):
-    print(f"{len(failed)} Uploads failed!")
+    return failed == []
