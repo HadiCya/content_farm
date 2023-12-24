@@ -4,6 +4,8 @@ from tiktok_uploader.upload import upload_videos
 from tiktok_uploader.auth import AuthBackend
 from selenium.webdriver.chrome.options import Options
 
+from youtube_uploader_selenium import YouTubeUploader
+
 
 from utils import *
 
@@ -25,8 +27,13 @@ def upload_to_tiktok():
 
     auth = AuthBackend(username=tiktok_username,
                        password=tiktok_password, cookies='cookies.txt')
-    upload_videos(videos=videos, auth=auth, headless=True, options=options)
+    print(upload_videos(videos=videos, auth=auth, headless=True, options=options))
 
 
 def upload_to_youtube():
-    pass
+    video_path = '123/rockets.flv'
+    metadata_path = '123/rockets_metadata.json'
+
+    uploader = YouTubeUploader(video_path, metadata_path)
+    was_video_uploaded, video_id = uploader.upload()
+    print("Video Uploaded!" if was_video_uploaded else "Video Failed to Upload.")
