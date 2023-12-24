@@ -24,8 +24,10 @@ RUN mkdir -p /tmp/distr && \
     cd /tmp && \
     rm -rf distr
 
-COPY . /app
+COPY requirements.txt /app
 
 RUN pip install -r requirements.txt
 
-CMD ["python", "main.py"]
+COPY . /app
+
+ENTRYPOINT ["python3.9", "main.py"]
