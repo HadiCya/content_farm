@@ -3,9 +3,7 @@ import os
 import re
 import urllib.request
 from PIL import Image
-
-OUTPUT_FILE_JSON = 'release.json'
-CONFIG_FILE_JSON = 'config.json'
+import config
 
 
 def remove_parentheses(text):
@@ -25,18 +23,6 @@ def download_image(url, image_file_path, size):
         resized_img.save(image_file_path)
 
 
-def add_to_json(output_file_name, artist_name):
-    videos = read_json(OUTPUT_FILE_JSON)
-
-    videos.append({
-        'video': output_file_name,
-        'description': f"How many did you get?? #{artist_name.replace(' ', '').lower()} #guessthesong #songquiz #quiz"
-    })
-
-    with open(OUTPUT_FILE_JSON, 'w', encoding='utf-8') as f:
-        json.dump(videos, f, ensure_ascii=False, indent=4)
-
-
 def read_json(file_name):
     try:
         with open(file_name, 'r') as f:
@@ -47,9 +33,8 @@ def read_json(file_name):
 
 
 def create_asset_directories():
-    config_data = read_json(CONFIG_FILE_JSON)
     directories = ['assets/images', 'assets/snippets',
                    'assets/videos', 'final_videos']
 
     for dir in directories:
-        os.makedirs(f"{config_data['asset_file_path']}{dir}", exist_ok=True)
+        os.makedirs(f"{config.ASSET_FILE_PATH}{dir}", exist_ok=True)

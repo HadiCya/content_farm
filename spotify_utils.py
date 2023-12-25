@@ -1,16 +1,12 @@
-from dotenv import load_dotenv
 import os
 import base64
 from requests import post, get
 import json
+import config
 
 
 def get_token():
-    load_dotenv()
-    client_id = os.getenv("SPOTIFY_CLIENT_ID")
-    client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-
-    auth_string = client_id + ":" + client_secret
+    auth_string = config.SPOTIFY_CLIENT_ID + ":" + config.SPOTIFY_CLIENT_SECRET
     auth_bytes = auth_string.encode("utf-8")
     auth_base64 = str(base64.b64encode(auth_bytes), "utf-8")
 

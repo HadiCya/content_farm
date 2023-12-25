@@ -1,5 +1,4 @@
 import os
-from dotenv import load_dotenv
 from tiktok_uploader.upload import upload_videos
 from tiktok_uploader.auth import AuthBackend
 from selenium.webdriver.chrome.options import Options
@@ -7,17 +6,8 @@ from selenium.webdriver.chrome.options import Options
 
 from utils import *
 
-OUTPUT_FILE_JSON = 'release.json'
 
-
-def upload_to_tiktok():
-    videos = read_json(OUTPUT_FILE_JSON)
-
-    load_dotenv(override=True)
-    tiktok_username = os.getenv("TIKTOK_USERNAME")
-    tiktok_password = os.getenv("TIKTOK_PASSWORD")
-    print(tiktok_username, tiktok_password)
-
+def upload_to_tiktok(videos):
     options = Options()
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_argument('--profile-directory=Default')
@@ -25,8 +15,8 @@ def upload_to_tiktok():
     options.add_argument('--headless')
     options.add_argument('--disable-dev-shm-usage')
 
-    auth = AuthBackend(username=tiktok_username,
-                       password=tiktok_password, cookies='cookies.txt')
+    auth = AuthBackend(username=config.TIKTOK_USERNAME,
+                       password=config.TIKTOK_PASSWORD, cookies=config.COOKIES_FILE_PATH)
     failed = upload_videos(videos=videos, auth=auth,
                            headless=True, options=options)
 

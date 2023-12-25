@@ -1,7 +1,9 @@
+import math
 from os import listdir
 from os.path import isfile, join
 import textwrap
 import random
+from pydub import AudioSegment
 
 from tiktok_voice import tts
 
@@ -9,34 +11,30 @@ from utils import *
 from spotify_utils import *
 from youtube_utils import *
 from moviepy.editor import *
+import config
 
-
-DURATION = 9
-REVEAL_DURATION = 3
-FPS = 24
-SIZE = (1080, 1920)
-IMAGE_SIZE = (928, 928)
-FONT_SIZE = 90
-INTRO_DURATION = 2
-CHARACTER_WRAP = 20
-
-
-CONFIG_FILE_JSON = 'config.json'
-
-config_data = read_json(CONFIG_FILE_JSON)
-
-FONT_PATH = "template/Roboto-Regular.ttf"
+DURATION = config.DURATION
+REVEAL_DURATION = config.REVEAL_DURATION
+FPS = config.FPS
+SIZE = config.SIZE
+IMAGE_SIZE = config.IMAGE_SIZE
+FONT_SIZE = config.FONT_SIZE
+INTRO_DURATION = config.INTRO_DURATION
+CHARACTER_WRAP = config.CHARACTER_WRAP
+FONT_PATH = config.FONT_PATH
+ASSET_FILE_PATH = config.ASSET_FILE_PATH
+MIN_AVG_VOLUME = config.MIN_AVG_VOLUME
 
 
 def create_countdown_clip(number):
-    return TextClip(str(number), font=FONT_PATH, fontsize=FONT_SIZE*4, color='white', stroke_color='black').set_duration(1).set_fps(FPS).set_position('center').set_start(DURATION - REVEAL_DURATION - number)
+    return TextClip(str(number), font=FONT_PATH, fontsize=FONT_SIZE*3, color='white', stroke_color='black').set_duration(1).set_fps(FPS).set_position('center').set_start(DURATION - REVEAL_DURATION - number)
 
 
 def create_intro(artist_image_url, artist_name, artist_id, last_music_video, part_two=False):
-    image_file_path = f"{config_data['asset_file_path']}assets/images/{artist_id}.jpeg"
+    image_file_path = f"{ASSET_FILE_PATH}assets/images/{artist_id}.jpeg"
 
     background_clip = VideoFileClip(
-        f"{config_data['asset_file_path']}assets/videos/{last_music_video}", audio=False)
+        f"{ASSET_FILE_PATH}assets/videos/{last_music_video}", audio=False)
     max_start_time = max(0, background_clip.duration - INTRO_DURATION - 10)
     random_start_time = random.randint(0, int(max_start_time))
     background_clip = background_clip.subclip(
@@ -55,7 +53,7 @@ def create_intro(artist_image_url, artist_name, artist_id, last_music_video, par
     intro_clip = CompositeVideoClip(
         [background_clip, artist_image_clip, intro_text, artist_name_clip], size=SIZE).set_duration(INTRO_DURATION)
 
-    text_to_speech_file_path = f"{config_data['asset_file_path']}assets/snippets/{artist_id}.mp3"
+    text_to_speech_file_path = f"{ASSET_FILE_PATH}assets/snippets/{artist_id}.mp3"
 
     if os.path.isfile(text_to_speech_file_path):
         print("Text to Speech already downloaded!")
@@ -63,10 +61,8 @@ def create_intro(artist_image_url, artist_name, artist_id, last_music_video, par
         intro_clip.audio = CompositeAudioClip([text_to_speech])
         return intro_clip
 
-    load_dotenv(override=True)
-    session_id = os.getenv("SESSION_ID")
     try:
-        tts(session_id,
+        tts(config.SESSION_ID,
             req_text=f"Guess the {artist_name} song", filename=text_to_speech_file_path)
         text_to_speech = AudioFileClip(text_to_speech_file_path)
         intro_clip.audio = CompositeAudioClip([text_to_speech])
@@ -76,7 +72,7 @@ def create_intro(artist_image_url, artist_name, artist_id, last_music_video, par
     return intro_clip
 
 
-def create_artist_video(artist_name, token, split=True):
+def create_artist_video(artist_name, token, split=False):
     result = search_for_artist(token, artist_name)
     print(f'Artist: {artist_name}')
     artist_id = result["id"]
@@ -88,7 +84,7 @@ def create_artist_video(artist_name, token, split=True):
     download_video(f'{artist_name} Music Video', artist_id,
                    int(result['popularity']) // 18)
     artist_music_videos = [f for f in listdir(
-        f"{config_data['asset_file_path']}assets/videos") if isfile(join(f"{config_data['asset_file_path']}assets/videos", f))]
+        f"{ASSET_FILE_PATH}assets/videos") if isfile(join(f"{ASSET_FILE_PATH}assets/videos", f))]
     artist_music_videos = [
         f for f in artist_music_videos if f.startswith(artist_id + "-")]
 
@@ -103,7 +99,7 @@ def create_artist_video(artist_name, token, split=True):
         song_name = remove_parentheses(song['name'])
         song_id = song['id']
         song_image_url = song['album']['images'][0]['url']
-        image_file_path = f"{config_data['asset_file_path']}assets/images/{song_id}.jpeg"
+        image_file_path = f"{ASSET_FILE_PATH}assets/images/{song_id}.jpeg"
 
         # VISUAL COMPONENTS
 
@@ -115,7 +111,7 @@ def create_artist_video(artist_name, token, split=True):
         last_music_video = newly_selected_music_video
 
         background_clip = VideoFileClip(
-            f"{config_data['asset_file_path']}assets/videos/{last_music_video}", audio=False)
+            f"{ASSET_FILE_PATH}assets/videos/{last_music_video}", audio=False)
         max_start_time = max(0, background_clip.duration - DURATION - 10)
         random_start_time = random.randint(0, int(max_start_time))
         background_clip = background_clip.subclip(
@@ -135,8 +131,8 @@ def create_artist_video(artist_name, token, split=True):
 
         # Create Song Count Text Clip
         sound_count_clip = TextClip(
-            f'Song {(i+1)%5 if (i+1)%5 > 0 else 5}/5', font=FONT_PATH, fontsize=FONT_SIZE, color='white', stroke_width=2, stroke_color='black') \
-            .set_duration(REVEAL_DURATION).set_fps(FPS).set_position(("center", (SIZE[1]//5)))
+            f'Song {((i+1)%5 if (i+1)%5 > 0 else 5) if split else i+1}/{len(songs)/2 if split else len(songs)}', font=FONT_PATH, fontsize=FONT_SIZE, color='white', stroke_width=2, stroke_color='black') \
+            .set_duration(DURATION).set_fps(FPS).set_position(("center", (SIZE[1]//7)))
 
         # Create Countdown
         countdown_clips = [create_countdown_clip(
@@ -145,10 +141,51 @@ def create_artist_video(artist_name, token, split=True):
         # AUDIO COMPONENTS
 
         # Create Song Snippet Clip
-        download_audio(f"{song_name} by {artist_name} Audio", song_id)
-        random_num = random.randint(20, 50-DURATION)
-        audio_clip = AudioFileClip(
-            f"{config_data['asset_file_path']}assets/snippets/{song_id}.mp3").subclip(random_num, random_num+DURATION).set_duration(DURATION)
+        download_audio(f"{song_name} by {artist_name} Official Audio", song_id)
+
+        MAX_TRIES = 20  # Define a maximum limit for tries
+
+        # Load audio file
+        song_clip_file_path = f"{ASSET_FILE_PATH}assets/snippets/{song_id}.mp3"
+        audio_clip = AudioFileClip(song_clip_file_path)
+        song_total_duration = int(audio_clip.duration)
+
+        # Convert to AudioSegment for volume checking
+        audio_segment_file = AudioSegment.from_file(song_clip_file_path)
+
+        tries = 0
+        max_volume = -math.inf  # Initialize max_volume as negative infinity
+        best_audio_clip = None
+
+        print("Finding optimal audio snippet.")
+        while True:
+            random_num = random.randint(1, song_total_duration - DURATION - 10)
+
+            # Take a slice of the segment
+            slice_start_ms = random_num*1000  # convert to ms
+            slice_end_ms = (random_num + DURATION)*1000  # convert to ms
+            audio_segment_slice = audio_segment_file[slice_start_ms:slice_end_ms]
+
+            # Check average volume
+            if audio_segment_slice.dBFS >= MIN_AVG_VOLUME:
+                # If volume is fine, create final audio clip and exit loop
+                final_audio_clip = audio_clip.subclip(
+                    random_num, random_num + DURATION).set_duration(DURATION)
+                break
+            else:
+                # If this segment is louder than all previous ones, store it
+                if audio_segment_slice.dBFS > max_volume:
+                    max_volume = audio_segment_slice.dBFS
+                    best_audio_clip = audio_clip.subclip(
+                        random_num, random_num + DURATION).set_duration(DURATION)
+
+                tries += 1
+                if tries == MAX_TRIES:
+                    print(
+                        f"Maximum tries reached. Using segment with loudest volume: {max_volume} dBFS.")
+                    final_audio_clip = best_audio_clip.volumex(
+                        max_volume/MIN_AVG_VOLUME)
+                    break
 
         # Create Sound Effects
         checkmark_sound = AudioFileClip(
@@ -166,25 +203,28 @@ def create_artist_video(artist_name, token, split=True):
              *countdown_clips,
              album_cover_clip.set_start(
                  DURATION-REVEAL_DURATION),
-             sound_count_clip.set_start(
-                 DURATION-REVEAL_DURATION),
+             sound_count_clip,
              title_clip.set_start(
                  DURATION-REVEAL_DURATION)],
             SIZE).set_duration(DURATION)
 
         song_clip.audio = CompositeAudioClip(
-            [audio_clip, clock_sound.set_start(1).set_duration(DURATION-REVEAL_DURATION-1), checkmark_sound.set_start(DURATION-REVEAL_DURATION), swipe_sound.set_start(DURATION-0.5)])
+            [final_audio_clip, clock_sound.set_start(1).set_duration(DURATION-REVEAL_DURATION-1), checkmark_sound.set_start(DURATION-REVEAL_DURATION), swipe_sound.set_start(DURATION-0.5)])
         clips.append(song_clip)
+
+    release = []
 
     if split:
         # Split the clips into two halves and process each half
         mid_index = len(clips) // 2
-        process_clips(clips[:mid_index], artist_name, intro_clip, suffix='1')
-        process_clips(clips[mid_index:], artist_name, create_intro(
-            artist_image_url, artist_name, artist_id, last_music_video, True), suffix='2')
+        release.append(process_clips(
+            clips[:mid_index], artist_name, intro_clip, suffix='1'))
+        release.append(process_clips(clips[mid_index:], artist_name, create_intro(
+            artist_image_url, artist_name, artist_id, last_music_video, True), suffix='2'))
     else:
         # Process all clips together
-        process_clips(clips, artist_name, intro_clip)
+        release.append(process_clips(clips, artist_name, intro_clip))
+    return release
 
 
 def process_clips(clips, artist_name, intro_clip, suffix=None):
@@ -197,7 +237,10 @@ def process_clips(clips, artist_name, intro_clip, suffix=None):
 
     # Concatenate and write the final video file
     final_clip = concatenate_videoclips(slided_clips)
-    output_file_name = f"{config_data['asset_file_path']}final_videos/{artist_name.replace(' ', '')}{f'-{suffix}' if suffix else ''}.mp4"
+    output_file_name = f"{ASSET_FILE_PATH}final_videos/{artist_name.replace(' ', '')}{f'-{suffix}' if suffix else ''}.mp4"
     final_clip.write_videofile(
         output_file_name, audio=True, audio_codec="aac", fps=FPS)
-    add_to_json(output_file_name, artist_name)
+    return {
+        'video': output_file_name,
+        'description': f"How many did you get?? #{remove_punc_n_spaces(artist_name).lower()} #guessthesong #songquiz #quiz"
+    }
