@@ -2,8 +2,8 @@ import os
 from dotenv import load_dotenv
 
 # VIDEO GENERATION
-DURATION = 7
-REVEAL_DURATION = 3
+DURATION = 6
+REVEAL_DURATION = 2
 FPS = 24
 SIZE = (1080, 1920)
 IMAGE_SIZE = (928, 928)
@@ -21,7 +21,7 @@ BILLBOARD_CHARTS = ('greatest-r-b-hip-hop-artists', None), \
      2021), ('top-r-and-b-hip-hop-artists', None)
 
 # PATHS
-FONT_PATH = "template/Roboto-Regular.ttf"
+FONT_PATH = "template/TikTok.ttf"
 COOKIES_FILE_PATH = "cookies.txt"
 ASSET_FILE_PATH = "../contentassets/"
 
