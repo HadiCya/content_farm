@@ -1,4 +1,3 @@
-import os
 from tiktok_uploader.upload import upload_videos
 from tiktok_uploader.auth import AuthBackend
 from selenium.webdriver.chrome.options import Options

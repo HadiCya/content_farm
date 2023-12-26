@@ -4,13 +4,14 @@ from dotenv import load_dotenv
 # VIDEO GENERATION
 DURATION = 6
 REVEAL_DURATION = 2
+INTRO_DURATION = 2
 FPS = 24
 SIZE = (1080, 1920)
 IMAGE_SIZE = (928, 928)
 FONT_SIZE = 90
-INTRO_DURATION = 2
 CHARACTER_WRAP = 20
 MIN_AVG_VOLUME = -11
+SONG_COUNT = 5
 
 # DRIVER
 MAX_ATTEMPTS = 3
@@ -23,7 +24,7 @@ BILLBOARD_CHARTS = ('greatest-r-b-hip-hop-artists', None), \
 # PATHS
 FONT_PATH = "template/TikTok.ttf"
 COOKIES_FILE_PATH = "cookies.txt"
-ASSET_FILE_PATH = "../contentassets/"
+ASSET_FILE_PATH = ""
 
 # ENV FILES
 load_dotenv(override=True)

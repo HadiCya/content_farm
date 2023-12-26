@@ -24,13 +24,14 @@ CHARACTER_WRAP = config.CHARACTER_WRAP
 FONT_PATH = config.FONT_PATH
 ASSET_FILE_PATH = config.ASSET_FILE_PATH
 MIN_AVG_VOLUME = config.MIN_AVG_VOLUME
+SONG_COUNT = config.SONG_COUNT
 
 
 def create_countdown_clip(number):
     return TextClip(str(number), font=FONT_PATH, fontsize=FONT_SIZE*3, color='white', stroke_color='black').set_duration(1).set_fps(FPS).set_position('center').set_start(DURATION - REVEAL_DURATION - number)
 
 
-def create_intro(artist_image_url, artist_name, artist_id, last_music_video, part_two=False):
+def create_intro(artist_image_url, artist_name, artist_id, last_music_video):
     image_file_path = f"{ASSET_FILE_PATH}assets/images/{artist_id}.jpeg"
 
     background_clip = VideoFileClip(
@@ -47,7 +48,7 @@ def create_intro(artist_image_url, artist_name, artist_id, last_music_video, par
     download_image(artist_image_url, image_file_path, IMAGE_SIZE)
     artist_image_clip = ImageClip(image_file_path).set_duration(
         INTRO_DURATION).set_fps(FPS).resize(width=600).set_position("center")
-    artist_name_clip = TextClip(f"{textwrap.fill(artist_name + ' Pt. 2', CHARACTER_WRAP)}" if part_two else textwrap.fill(artist_name, CHARACTER_WRAP), font=FONT_PATH, fontsize=int(FONT_SIZE), color='white').set_duration(
+    artist_name_clip = TextClip(textwrap.fill(artist_name, CHARACTER_WRAP), font=FONT_PATH, fontsize=int(FONT_SIZE), color='white').set_duration(
         INTRO_DURATION).set_fps(FPS).set_position(("center", (SIZE[1]//4)*3))
 
     intro_clip = CompositeVideoClip(
@@ -72,17 +73,20 @@ def create_intro(artist_image_url, artist_name, artist_id, last_music_video, par
     return intro_clip
 
 
-def create_artist_video(artist_name, token, split=False):
+def create_artist_video(artist_name, token):
     result = search_for_artist(token, artist_name)
     print(f'Artist: {artist_name}')
     artist_id = result["id"]
     artist_image_url = result["images"][0]["url"]
     songs = get_songs_by_artist(token, artist_id)
     random.shuffle(songs)
+    songs = songs[:SONG_COUNT]
 
     # Download artist video
-    download_video(f'{artist_name} Music Video', artist_id,
-                   int(result['popularity']) // 18)
+    max_music_videos = min(SONG_COUNT, int(
+        result['popularity'])*SONG_COUNT // 100)
+
+    download_video(f'{artist_name} Music Video', artist_id, max_music_videos)
     artist_music_videos = [f for f in listdir(
         f"{ASSET_FILE_PATH}assets/videos") if isfile(join(f"{ASSET_FILE_PATH}assets/videos", f))]
     artist_music_videos = [
@@ -112,8 +116,8 @@ def create_artist_video(artist_name, token, split=False):
 
         background_clip = VideoFileClip(
             f"{ASSET_FILE_PATH}assets/videos/{last_music_video}", audio=False)
-        max_start_time = max(0, background_clip.duration - DURATION - 10)
-        random_start_time = random.randint(0, int(max_start_time))
+        max_start_time = max(10, background_clip.duration - DURATION - 10)
+        random_start_time = random.randint(10, int(max_start_time))
         background_clip = background_clip.subclip(
             random_start_time, random_start_time + DURATION).set_duration(DURATION)
         background_clip = background_clip.set_position(
@@ -131,7 +135,7 @@ def create_artist_video(artist_name, token, split=False):
 
         # Create Song Count Text Clip
         sound_count_clip = TextClip(
-            f'Song {((i+1)%5 if (i+1)%5 > 0 else 5) if split else i+1}/{len(songs)/2 if split else len(songs)}', font=FONT_PATH, fontsize=FONT_SIZE, color='white', stroke_width=2, stroke_color='black') \
+            f'Song {i+1}/{len(songs)}', font=FONT_PATH, fontsize=FONT_SIZE, color='white', stroke_width=2, stroke_color='black') \
             .set_duration(DURATION).set_fps(FPS).set_position(("center", (SIZE[1]//7)))
 
         # Create Countdown
@@ -154,7 +158,7 @@ def create_artist_video(artist_name, token, split=False):
         audio_segment_file = AudioSegment.from_file(song_clip_file_path)
 
         tries = 0
-        max_volume = -math.inf  # Initialize max_volume as negative infinity
+        max_volume = -math.inf
         best_audio_clip = None
 
         print("Finding optimal audio snippet.")
@@ -213,17 +217,7 @@ def create_artist_video(artist_name, token, split=False):
         clips.append(song_clip)
 
     release = []
-
-    if split:
-        # Split the clips into two halves and process each half
-        mid_index = len(clips) // 2
-        release.append(process_clips(
-            clips[:mid_index], artist_name, intro_clip, suffix='1'))
-        release.append(process_clips(clips[mid_index:], artist_name, create_intro(
-            artist_image_url, artist_name, artist_id, last_music_video, True), suffix='2'))
-    else:
-        # Process all clips together
-        release.append(process_clips(clips, artist_name, intro_clip))
+    release.append(process_clips(clips, artist_name, intro_clip))
     return release
 
 
