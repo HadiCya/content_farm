@@ -17,19 +17,22 @@ def main():
             if videos:
                 print("Video created successfully!")
                 break
-        except:
-            print()
-    for i in range(MAX_ATTEMPTS):
-        print(
-            f"Attempting to upload video. Attempt: {i+1} of {MAX_ATTEMPTS}.")
-        try:
-            success = upload_to_tiktok(videos)
-            if success:
-                print("Video uploaded successfully!")
-                break
             print(f"Attempt {i+1} of {MAX_ATTEMPTS} failed.")
-        except:
-            print(f"Attempt {i+1} of {MAX_ATTEMPTS} failed.")
+        except Exception as e:
+            print(f"Attempt {i+1} of {MAX_ATTEMPTS} failed with error: {e}")
+    if videos:
+        for i in range(MAX_ATTEMPTS):
+            print(
+                f"Attempting to upload video. Attempt: {i+1} of {MAX_ATTEMPTS}.")
+            try:
+                success = upload_to_tiktok(videos)
+                if success:
+                    print("Video uploaded successfully!")
+                    break
+                print(f"Attempt {i+1} of {MAX_ATTEMPTS} failed.")
+            except Exception as e:
+                print(
+                    f"Attempt {i+1} of {MAX_ATTEMPTS} failed with error: {e}")
 
 
 if __name__ == "__main__":
