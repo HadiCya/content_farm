@@ -1,6 +1,7 @@
 from billboard_utils import *
 from spotify_utils import *
 from uploading_utils import *
+from video_generation import *
 from video_utils import *
 import config
 
