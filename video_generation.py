@@ -1,16 +1,20 @@
+# Standard library imports
 from os import listdir
 from os.path import isfile, join
-import textwrap
 import random
+import textwrap
+from datetime import datetime
 
+# Third-party imports
+from moviepy.editor import *
 from tiktok_voice import tts
 
-from utils import *
+# Local application/library specific imports
+import config
 from spotify_utils import *
+from utils import *
 from video_utils import *
 from youtube_utils import *
-from moviepy.editor import *
-import config
 
 DURATION = config.DURATION
 REVEAL_DURATION = config.REVEAL_DURATION
@@ -65,6 +69,7 @@ def create_artist_video(artist_name, token):
     result = search_for_artist(token, artist_name)
     print(f'Artist: {artist_name}')
     artist_id = result["id"]
+    print(f"Artist ID: {artist_id}")
     artist_image_url = result["images"][0]["url"]
     songs = get_songs_by_artist(token, artist_id)
     random.shuffle(songs)
@@ -162,3 +167,64 @@ def create_artist_video(artist_name, token):
     release = []
     release.append(process_clips(clips, artist_name, intro_clip))
     return release
+
+def create_billboard_video(songs):
+
+    # Download the five videos
+    for index, song in enumerate(songs[:5]):
+        download_video(f'{song} Music Video', song, 1)
+
+
+   # Retrieve downloaded videos
+    billboard_music_videos = [f for f in listdir(f"{config.ASSET_FILE_PATH}assets/videos")
+                          if isfile(join(f"{config.ASSET_FILE_PATH}assets/videos", f))]
+    
+    last_music_video = random.choice(billboard_music_videos)
+    
+    # Begin Creating Clips
+    clips = []
+    
+    for index, song in enumerate(songs):
+        newly_selected_music_video = random.choice(billboard_music_videos)
+
+        last_music_video = newly_selected_music_video
+        
+        composite_audio = []
+        song_clip_snippet = create_song_snippet_clip(
+            song, song)
+        composite_audio.append(song_clip_snippet)
+
+        background_clip = create_background_clip(
+            f"{ASSET_FILE_PATH}assets/videos/{last_music_video}")
+        
+        title_clip = TextClip(
+            f'{textwrap.fill(song, CHARACTER_WRAP)}', font=FONT_PATH, fontsize=FONT_SIZE, color='white', stroke_width=2, stroke_color='black') \
+            .set_duration(REVEAL_DURATION).set_fps(FPS).set_position(("center", SIZE[1]//4))
+        
+        # Assembling the clips
+        song_clip = CompositeVideoClip(
+            [background_clip,title_clip],
+            SIZE).set_duration(DURATION)
+
+        song_clip.audio = CompositeAudioClip(composite_audio)
+        clips.append(song_clip)
+        
+    # Apply transformation to each clip and create a composite video clip
+    slided_clips = [CompositeVideoClip([clip.fx(transfx.slide_out, 0.4, 'right')])
+                    for clip in clips]
+
+    # Concatenate and write the final video file
+    final_clip = concatenate_videoclips(slided_clips)
+    
+    # Define the path for the final video
+    final_video_path = os.path.join(config.ASSET_FILE_PATH, 'final_videos', 'final_video.mp4')
+
+    # Create 'final_videos' directory if it doesn't exist
+    final_videos_dir = os.path.dirname(final_video_path)
+    if not os.path.exists(final_videos_dir):
+        os.makedirs(final_videos_dir)
+
+    # Write the final video to the specified path
+    final_clip.write_videofile(final_video_path)
+    
+    

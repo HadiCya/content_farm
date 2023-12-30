@@ -45,16 +45,20 @@ def process_clips(clips, artist_name, intro_clip, suffix=None):
     }
 
 
-def create_song_snippet_clip(song_name, song_id, artist_name):
+def create_song_snippet_clip(song_name, song_id):
+    print(f"Starting to create snippet clip for song: {song_name} with ID: {song_id}")
+
     # Create Song Snippet Clip
-    download_audio(f"{song_name} by {artist_name} Official Audio", song_id)
+    download_audio(f"{song_name} Official Audio", song_id)
 
     MAX_TRIES = 20  # Define a maximum limit for tries
 
     # Load audio file
     song_clip_file_path = f"{ASSET_FILE_PATH}assets/snippets/{song_id}.mp3"
+    print(f"Loading audio file from path: {song_clip_file_path}")
     audio_clip = AudioFileClip(song_clip_file_path)
     song_total_duration = int(audio_clip.duration)
+    print(f"Total duration of the song: {song_total_duration} seconds")
 
     # Convert to AudioSegment for volume checking
     audio_segment_file = AudioSegment.from_file(song_clip_file_path)
@@ -66,33 +70,39 @@ def create_song_snippet_clip(song_name, song_id, artist_name):
     print("Finding optimal audio snippet.")
     while True:
         random_num = random.randint(1, song_total_duration - DURATION - 10)
+        print(f"Selected start time for snippet: {random_num} seconds")
 
         # Take a slice of the segment
-        slice_start_ms = random_num*1000  # convert to ms
-        slice_end_ms = (random_num + DURATION)*1000  # convert to ms
+        slice_start_ms = random_num * 1000  # convert to ms
+        slice_end_ms = (random_num + DURATION) * 1000  # convert to ms
         audio_segment_slice = audio_segment_file[slice_start_ms:slice_end_ms]
 
         # Check average volume
-        if audio_segment_slice.dBFS >= MIN_AVG_VOLUME:
-            # If volume is fine, create final audio clip and exit loop
+        slice_volume = audio_segment_slice.dBFS
+        print(f"Average volume of the slice: {slice_volume} dBFS")
+        if slice_volume >= MIN_AVG_VOLUME:
+            print("Volume is adequate. Finalizing this audio snippet.")
             final_audio_clip = audio_clip.subclip(
                 random_num, random_num + DURATION).set_duration(DURATION)
             break
         else:
             # If this segment is louder than all previous ones, store it
-            if audio_segment_slice.dBFS > max_volume:
-                max_volume = audio_segment_slice.dBFS
+            if slice_volume > max_volume:
+                print(f"Found a louder segment: {slice_volume} dBFS")
+                max_volume = slice_volume
                 best_audio_clip = audio_clip.subclip(
                     random_num, random_num + DURATION).set_duration(DURATION)
 
             tries += 1
+            print(f"Attempt {tries}/{MAX_TRIES}")
             if tries == MAX_TRIES:
-                print(
-                    f"Maximum tries reached. Using segment with loudest volume: {max_volume} dBFS.")
+                print(f"Maximum tries reached. Using segment with loudest volume: {max_volume} dBFS.")
                 final_audio_clip = best_audio_clip.volumex(
-                    max_volume/MIN_AVG_VOLUME)
+                    max_volume / MIN_AVG_VOLUME)
                 break
+
     return final_audio_clip
+
 
 
 def create_background_clip(file_path):

@@ -7,33 +7,43 @@ import config
 
 MAX_ATTEMPTS = config.MAX_ATTEMPTS
 
+def get_5_songs():
+    songs = []
+    try:
+        chart = billboard.ChartData('hot-100')
+        for i in range(5):
+            songs.append(chart[i].title)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    return songs
 
 def main():
     create_asset_directories()
-    for i in range(MAX_ATTEMPTS):
-        print(
-            f"Attempting to create video. Attempt: {i+1} of {MAX_ATTEMPTS}.")
-        try:
-            videos = create_artist_video(get_random_artist(), get_token())
-            if videos:
-                print("Video created successfully!")
-                break
-            print(f"Attempt {i+1} of {MAX_ATTEMPTS} failed.")
-        except Exception as e:
-            print(f"Attempt {i+1} of {MAX_ATTEMPTS} failed with error: {e}")
-    if videos:
-        for i in range(MAX_ATTEMPTS):
-            print(
-                f"Attempting to upload video. Attempt: {i+1} of {MAX_ATTEMPTS}.")
-            try:
-                success = upload_to_tiktok(videos)
-                if success:
-                    print("Video uploaded successfully!")
-                    break
-                print(f"Attempt {i+1} of {MAX_ATTEMPTS} failed.")
-            except Exception as e:
-                print(
-                    f"Attempt {i+1} of {MAX_ATTEMPTS} failed with error: {e}")
+    create_billboard_video(get_5_songs())
+    # for i in range(MAX_ATTEMPTS):
+    #     print(
+    #         f"Attempting to create video. Attempt: {i+1} of {MAX_ATTEMPTS}.")
+    #     try:
+    #         videos = create_artist_video(get_random_artist(), get_token())
+    #         if videos:
+    #             print("Video created successfully!")
+    #             break
+    #         print(f"Attempt {i+1} of {MAX_ATTEMPTS} failed.")
+    #     except Exception as e:
+    #         print(f"Attempt {i+1} of {MAX_ATTEMPTS} failed with error: {e}")
+    # if videos:
+    #     for i in range(MAX_ATTEMPTS):
+    #         print(
+    #             f"Attempting to upload video. Attempt: {i+1} of {MAX_ATTEMPTS}.")
+    #         try:
+    #             success = upload_to_tiktok(videos)
+    #             if success:
+    #                 print("Video uploaded successfully!")
+    #                 break
+    #             print(f"Attempt {i+1} of {MAX_ATTEMPTS} failed.")
+    #         except Exception as e:
+    #             print(
+    #                 f"Attempt {i+1} of {MAX_ATTEMPTS} failed with error: {e}")
 
 
 if __name__ == "__main__":

@@ -23,9 +23,9 @@ def search_video(title, maxResults=3):
     return youtubes
 
 
-def download_audio(title, id):
+def download_audio(title, audio_id):
     print(f'Attempting Video Search: {title}')
-    FILE_NAME = f'{id}.mp3'
+    FILE_NAME = f'{audio_id}.mp3'
 
     SAVE_PATH = f"{config.ASSET_FILE_PATH}assets/snippets"
 
@@ -53,12 +53,12 @@ def download_video(title, id, maxVideos):
 
     SAVE_PATH = f"{config.ASSET_FILE_PATH}assets/videos"
 
-    if os.path.isfile(f"{SAVE_PATH}/{id}-{maxVideos-1}.mp4"):
+    if os.path.isfile(f"{SAVE_PATH}/{id}.mp4"):
         print("Videos already downloaded!")
         return
 
     youtubes = search_video(title, maxVideos*2)
-    for i in range(maxVideos-1):
+    for i in range(maxVideos):
         yt = youtubes[i]
         try:
             video_stream = yt.streams.get_highest_resolution()
