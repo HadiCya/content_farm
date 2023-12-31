@@ -26,7 +26,7 @@ def create_countdown_clip(number):
     return TextClip(str(number), font=FONT_PATH, fontsize=FONT_SIZE*3, color='white', stroke_color='black').set_duration(1).set_fps(FPS).set_position('center').set_start(DURATION - REVEAL_DURATION - number)
 
 
-def process_clips(clips, artist_name, intro_clip, suffix=None):
+def process_clips(clips, intro_clip, artist_name=None, suffix=None):
     # Add intro clip at the beginning
     clips.insert(0, intro_clip)
 
@@ -36,29 +36,38 @@ def process_clips(clips, artist_name, intro_clip, suffix=None):
 
     # Concatenate and write the final video file
     final_clip = concatenate_videoclips(slided_clips)
-    output_file_name = f"{ASSET_FILE_PATH}final_videos/{artist_name.replace(' ', '')}{f'-{suffix}' if suffix else ''}.mp4"
+
+    # Check if artist_name is provided, otherwise use default path
+    if artist_name:
+        output_file_name = f"{ASSET_FILE_PATH}final_videos/{artist_name.replace(' ', '')}{f'-{suffix}' if suffix else ''}.mp4"
+    else:
+        output_file_name = os.path.join(config.ASSET_FILE_PATH, 'final_videos', 'final_video.mp4')
+
     final_clip.write_videofile(
         output_file_name, audio=True, audio_codec="aac", fps=FPS)
+
     return {
         'video': output_file_name,
-        'description': f"How many did you get?? #{remove_punc_n_spaces(artist_name).lower()} #guessthesong #songquiz #quiz"
+        'description': f"How many did you get?? #{remove_punc_n_spaces(artist_name).lower() if artist_name else 'guessthesong'} #guessthesong #songquiz #quiz"
     }
 
-
-def create_song_snippet_clip(song_name, song_id):
+def create_song_snippet_clip(song_name, song_id, artist_name=None):
     print(f"Starting to create snippet clip for song: {song_name} with ID: {song_id}")
 
     # Create Song Snippet Clip
-    download_audio(f"{song_name} Official Audio", song_id)
+    if artist_name:
+        download_audio(f"{song_name} by {artist_name} Official Audio", song_id)
+    else:
+        download_audio(f"{song_name} Official Audio", song_id)
 
     MAX_TRIES = 20  # Define a maximum limit for tries
 
     # Load audio file
     song_clip_file_path = f"{ASSET_FILE_PATH}assets/snippets/{song_id}.mp3"
-    print(f"Loading audio file from path: {song_clip_file_path}")
+   
     audio_clip = AudioFileClip(song_clip_file_path)
     song_total_duration = int(audio_clip.duration)
-    print(f"Total duration of the song: {song_total_duration} seconds")
+   
 
     # Convert to AudioSegment for volume checking
     audio_segment_file = AudioSegment.from_file(song_clip_file_path)
@@ -70,7 +79,6 @@ def create_song_snippet_clip(song_name, song_id):
     print("Finding optimal audio snippet.")
     while True:
         random_num = random.randint(1, song_total_duration - DURATION - 10)
-        print(f"Selected start time for snippet: {random_num} seconds")
 
         # Take a slice of the segment
         slice_start_ms = random_num * 1000  # convert to ms
@@ -79,7 +87,6 @@ def create_song_snippet_clip(song_name, song_id):
 
         # Check average volume
         slice_volume = audio_segment_slice.dBFS
-        print(f"Average volume of the slice: {slice_volume} dBFS")
         if slice_volume >= MIN_AVG_VOLUME:
             print("Volume is adequate. Finalizing this audio snippet.")
             final_audio_clip = audio_clip.subclip(

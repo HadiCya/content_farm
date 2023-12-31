@@ -64,6 +64,34 @@ def create_intro(artist_image_url, artist_name, artist_id, background_clip_file_
 
     return intro_clip
 
+def create_billboard_intro (video_id, background_clip_file_path):
+
+    background_clip = create_background_clip(background_clip_file_path)
+
+    intro_text = TextClip("Rank the Song", font=FONT_PATH, fontsize=int(FONT_SIZE), color='white').set_duration(
+        INTRO_DURATION).set_fps(FPS).set_position(("center", SIZE[1]//4))
+
+    intro_clip = CompositeVideoClip(
+        [background_clip, intro_text], size=SIZE).set_duration(INTRO_DURATION)
+
+    text_to_speech_file_path = f"{ASSET_FILE_PATH}assets/snippets/{video_id}.mp3"
+
+    if os.path.isfile(text_to_speech_file_path):
+        print("Text to Speech already downloaded!")
+        text_to_speech = AudioFileClip(text_to_speech_file_path)
+        intro_clip.audio = CompositeAudioClip([text_to_speech])
+        return intro_clip
+
+    try:
+        tts(config.SESSION_ID,
+            req_text=f"Rank the song", filename=text_to_speech_file_path)
+        text_to_speech = AudioFileClip(text_to_speech_file_path)
+        intro_clip.audio = CompositeAudioClip([text_to_speech])
+    except:
+        print("Error Getting Text To Speech Audio")
+
+    return intro_clip
+
 
 def create_artist_video(artist_name, token):
     result = search_for_artist(token, artist_name)
@@ -165,66 +193,60 @@ def create_artist_video(artist_name, token):
         clips.append(song_clip)
 
     release = []
-    release.append(process_clips(clips, artist_name, intro_clip))
+    release.append(process_clips(clips, intro_clip, artist_name))
     return release
 
 def create_billboard_video(songs):
 
     # Download the five videos
-    for index, song in enumerate(songs[:5]):
+    for song in enumerate(songs[:5]):
         download_video(f'{song} Music Video', song, 1)
-
 
    # Retrieve downloaded videos
     billboard_music_videos = [f for f in listdir(f"{config.ASSET_FILE_PATH}assets/videos")
                           if isfile(join(f"{config.ASSET_FILE_PATH}assets/videos", f))]
     
     last_music_video = random.choice(billboard_music_videos)
+    intro_clip = create_billboard_intro(str(songs[0]), f"{ASSET_FILE_PATH}assets/videos/{last_music_video}")
     
     # Begin Creating Clips
     clips = []
     
-    for index, song in enumerate(songs):
+    for song in enumerate(songs):
         newly_selected_music_video = random.choice(billboard_music_videos)
 
         last_music_video = newly_selected_music_video
         
         composite_audio = []
         song_clip_snippet = create_song_snippet_clip(
-            song, song)
+            str(song[1]), str(song[1]))
         composite_audio.append(song_clip_snippet)
 
         background_clip = create_background_clip(
             f"{ASSET_FILE_PATH}assets/videos/{last_music_video}")
         
         title_clip = TextClip(
-            f'{textwrap.fill(song, CHARACTER_WRAP)}', font=FONT_PATH, fontsize=FONT_SIZE, color='white', stroke_width=2, stroke_color='black') \
+            f'{textwrap.fill(str(song[1]), CHARACTER_WRAP)}', font=FONT_PATH, fontsize=FONT_SIZE, color='white', stroke_width=2, stroke_color='black') \
             .set_duration(REVEAL_DURATION).set_fps(FPS).set_position(("center", SIZE[1]//4))
+            
+        # Creating the list clip
+        number_list = "\n".join([f"{i}." for i in range(1, 6)])
+        list_clip = TextClip(
+            f'{textwrap.fill(number_list, CHARACTER_WRAP)}',
+            font=FONT_PATH,
+            fontsize=FONT_SIZE,
+            color='white',
+            stroke_width=2,
+            stroke_color='black'
+        ).set_duration(REVEAL_DURATION).set_fps(FPS).set_position(("left", SIZE[1] - 100))
         
         # Assembling the clips
         song_clip = CompositeVideoClip(
-            [background_clip,title_clip],
+            [background_clip,title_clip,list_clip],
             SIZE).set_duration(DURATION)
 
         song_clip.audio = CompositeAudioClip(composite_audio)
         clips.append(song_clip)
-        
-    # Apply transformation to each clip and create a composite video clip
-    slided_clips = [CompositeVideoClip([clip.fx(transfx.slide_out, 0.4, 'right')])
-                    for clip in clips]
-
-    # Concatenate and write the final video file
-    final_clip = concatenate_videoclips(slided_clips)
     
-    # Define the path for the final video
-    final_video_path = os.path.join(config.ASSET_FILE_PATH, 'final_videos', 'final_video.mp4')
-
-    # Create 'final_videos' directory if it doesn't exist
-    final_videos_dir = os.path.dirname(final_video_path)
-    if not os.path.exists(final_videos_dir):
-        os.makedirs(final_videos_dir)
-
-    # Write the final video to the specified path
-    final_clip.write_videofile(final_video_path)
-    
-    
+    #adds intro and writes to final_videos dir   
+    process_clips(clips, intro_clip)

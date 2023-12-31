@@ -1,3 +1,4 @@
+import random
 from billboard_utils import *
 from spotify_utils import *
 from uploading_utils import *
@@ -9,10 +10,16 @@ MAX_ATTEMPTS = config.MAX_ATTEMPTS
 
 def get_5_songs():
     songs = []
+    selected_indices = set()
     try:
         chart = billboard.ChartData('hot-100')
         for i in range(5):
-            songs.append(chart[i].title)
+            while True:
+                random_number = random.randint(0, 99)
+                if random_number not in selected_indices:
+                    selected_indices.add(random_number)
+                    songs.append(chart[random_number].title)
+                    break
     except Exception as e:
         print(f"An error occurred: {e}")
     return songs
