@@ -10,3 +10,13 @@ def get_random_artist():
 
     print(f"Selecting: {artist}")
     return artist
+
+
+def get_5_songs():
+    try:
+        songs = [song.title for song in billboard.ChartData(
+            'r-b-hip-hop-songs')]
+        random.shuffle(songs)
+        return songs[:5]
+    except:
+        print("An error occured!")

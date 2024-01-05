@@ -10,7 +10,7 @@ def search_video(title, maxResults=3):
                     developerKey=config.YOUTUBE_KEY)
 
     request = youtube.search().list(q=title,
-                                    part='snippet', type='video', maxResults=20)
+                                    part='snippet', type='video', maxResults=50)
     res = request.execute()
     youtubes = []
     for video in res['items']:
@@ -57,17 +57,17 @@ def download_video(title, id, maxVideos):
         print("Videos already downloaded!")
         return
 
-    youtubes = search_video(title, maxVideos*2)
-    for i in range(maxVideos-1):
+    youtubes = search_video(title, maxVideos*3)
+    for i in range(maxVideos):
         yt = youtubes[i]
         try:
             video_stream = yt.streams.get_highest_resolution()
-            if video_stream:
+            if os.path.isfile(f"{SAVE_PATH}/{id}-{i}.mp4"):
+                print(f"Video {i} already downloaded!")
+            elif video_stream:
                 print(f'\nDownloading video of: {yt.title}')
                 video_stream.download(SAVE_PATH, filename=f'{id}-{i}.mp4')
                 print('Download completed!')
-            elif not os.path.isfile(f"{SAVE_PATH}/{id}-{i}.mp4"):
-                print(f"Video {i} already downloaded!")
             else:
                 i -= 1
         except Exception as e:

@@ -26,33 +26,23 @@ def create_countdown_clip(number):
     return TextClip(str(number), font=FONT_PATH, fontsize=FONT_SIZE*3, color='white', stroke_color='black').set_duration(1).set_fps(FPS).set_position('center').set_start(DURATION - REVEAL_DURATION - number)
 
 
-def process_clips(clips, artist_name, intro_clip, suffix=None):
-    # Add intro clip at the beginning
-    clips.insert(0, intro_clip)
-
-    # Apply transformation to each clip and create a composite video clip
-    slided_clips = [CompositeVideoClip([clip.fx(transfx.slide_out, 0.4, 'right')])
-                    for clip in clips]
-
+def process_clips(clips, id, description):
     # Concatenate and write the final video file
-    final_clip = concatenate_videoclips(slided_clips)
-    output_file_name = f"{ASSET_FILE_PATH}final_videos/{artist_name.replace(' ', '')}{f'-{suffix}' if suffix else ''}.mp4"
+    final_clip = concatenate_videoclips(clips)
+    output_file_name = f"{ASSET_FILE_PATH}final_videos/{id}.mp4"
     final_clip.write_videofile(
         output_file_name, audio=True, audio_codec="aac", fps=FPS)
     return {
         'video': output_file_name,
-        'description': f"How many did you get?? #{remove_punc_n_spaces(artist_name).lower()} #guessthesong #songquiz #quiz"
+        'description': description
     }
 
 
-def create_song_snippet_clip(song_name, song_id, artist_name):
-    # Create Song Snippet Clip
-    download_audio(f"{song_name} by {artist_name} Official Audio", song_id)
-
+def create_optimal_sound_clip(id):
     MAX_TRIES = 20  # Define a maximum limit for tries
 
     # Load audio file
-    song_clip_file_path = f"{ASSET_FILE_PATH}assets/snippets/{song_id}.mp3"
+    song_clip_file_path = f"{ASSET_FILE_PATH}assets/snippets/{id}.mp3"
     audio_clip = AudioFileClip(song_clip_file_path)
     song_total_duration = int(audio_clip.duration)
 

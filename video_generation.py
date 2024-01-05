@@ -1,3 +1,4 @@
+from datetime import datetime
 from os import listdir
 from os.path import isfile, join
 import textwrap
@@ -26,37 +27,54 @@ MIN_AVG_VOLUME = config.MIN_AVG_VOLUME
 SONG_COUNT = config.SONG_COUNT
 
 
-def create_intro(artist_image_url, artist_name, artist_id, background_clip_file_path):
-    image_file_path = f"{ASSET_FILE_PATH}assets/images/{artist_id}.jpeg"
+def create_image_n_text_clips(duration, width, height, image_file_path, text):
+    image_clip = ImageClip(image_file_path).set_duration(
+        duration).set_fps(FPS).resize(width=width, height=height).set_position("center")
+    name_clip = TextClip(textwrap.fill(text, CHARACTER_WRAP), font=FONT_PATH, fontsize=int(FONT_SIZE), color='white').set_duration(
+        duration).set_fps(FPS).set_position(("center", (SIZE[1]//4)*3))
 
-    background_clip = create_background_clip(background_clip_file_path)
+    return [image_clip, name_clip]
 
-    intro_text = TextClip("Guess the Song", font=FONT_PATH, fontsize=int(FONT_SIZE), color='white').set_duration(
-        INTRO_DURATION).set_fps(FPS).set_position(("center", SIZE[1]//4))
-    download_image(artist_image_url, image_file_path, IMAGE_SIZE)
-    artist_image_clip = ImageClip(image_file_path).set_duration(
-        INTRO_DURATION).set_fps(FPS).resize(width=600).set_position("center")
-    artist_name_clip = TextClip(textwrap.fill(artist_name, CHARACTER_WRAP), font=FONT_PATH, fontsize=int(FONT_SIZE), color='white').set_duration(
-        INTRO_DURATION).set_fps(FPS).set_position(("center", (SIZE[1]//4)*3))
 
-    intro_clip = CompositeVideoClip(
-        [background_clip, artist_image_clip, intro_text, artist_name_clip], size=SIZE).set_duration(INTRO_DURATION)
-
-    text_to_speech_file_path = f"{ASSET_FILE_PATH}assets/snippets/{artist_id}.mp3"
-
+def create_tts_clip(text_to_speech_file_path, text):
     if os.path.isfile(text_to_speech_file_path):
         print("Text to Speech already downloaded!")
         text_to_speech = AudioFileClip(text_to_speech_file_path)
-        intro_clip.audio = CompositeAudioClip([text_to_speech])
-        return intro_clip
-
+        return text_to_speech
     try:
         tts(config.SESSION_ID,
-            req_text=f"Guess the {artist_name} song", filename=text_to_speech_file_path)
+            req_text=text, filename=text_to_speech_file_path)
         text_to_speech = AudioFileClip(text_to_speech_file_path)
-        intro_clip.audio = CompositeAudioClip([text_to_speech])
     except:
         print("Error Getting Text To Speech Audio")
+    return text_to_speech
+
+
+def create_intro(title, id, background_clip_file_path, image_url=None, subtitle=None):
+    clips = []
+
+    background_clip = create_background_clip(background_clip_file_path)
+    clips.append(background_clip)
+
+    intro_text = TextClip(title, font=FONT_PATH, fontsize=int(FONT_SIZE), color='white').set_duration(
+        INTRO_DURATION).set_fps(FPS).set_position(("center", SIZE[1]//4))
+    clips.append(intro_text)
+
+    if image_url and subtitle:
+        image_file_path = f"{ASSET_FILE_PATH}assets/images/{id}.jpeg"
+        download_image(image_url, image_file_path, IMAGE_SIZE)
+
+        image_n_title = create_image_n_text_clips(
+            INTRO_DURATION, 600, 600, image_file_path, subtitle)
+        clips.extend(image_n_title)
+
+    intro_clip = CompositeVideoClip(
+        clips, size=SIZE).set_duration(INTRO_DURATION)
+
+    text_to_speech_file_path = f"{ASSET_FILE_PATH}assets/snippets/{id}.mp3"
+    text_to_speech = create_tts_clip(
+        text_to_speech_file_path, f"{title}")
+    intro_clip.audio = CompositeAudioClip([text_to_speech])
 
     return intro_clip
 
@@ -81,9 +99,8 @@ def create_artist_video(artist_name, token):
         f for f in artist_music_videos if f.startswith(artist_id + "-")]
 
     last_music_video = random.choice(artist_music_videos)
-    intro_clip = create_intro(
-        artist_image_url, artist_name, artist_id, f"{ASSET_FILE_PATH}assets/videos/{last_music_video}")
-
+    intro_clip = create_intro("Guess the song", artist_id,
+                              f"{ASSET_FILE_PATH}assets/videos/{last_music_video}", artist_image_url, artist_name)
     # Begin Creating Clips
     clips = []
 
@@ -105,15 +122,9 @@ def create_artist_video(artist_name, token):
         background_clip = create_background_clip(
             f"{ASSET_FILE_PATH}assets/videos/{last_music_video}")
 
-        # Create Album Cover Image Clip
         download_image(song_image_url, image_file_path, IMAGE_SIZE)
-        album_cover_clip = ImageClip(image_file_path).set_duration(
-            REVEAL_DURATION).set_fps(FPS).set_position("center")
-
-        # Create Title Text Clip
-        title_clip = TextClip(
-            f'{textwrap.fill(song_name, CHARACTER_WRAP)}', font=FONT_PATH, fontsize=FONT_SIZE, color='white', stroke_width=2, stroke_color='black') \
-            .set_duration(REVEAL_DURATION).set_fps(FPS).set_position(("center", (SIZE[1]//4)*3))
+        album_cover_clip, title_clip = create_image_n_text_clips(
+            REVEAL_DURATION, IMAGE_SIZE[0], IMAGE_SIZE[1], image_file_path, song_name)
 
         # Create Song Count Text Clip
         sound_count_clip = TextClip(
@@ -126,8 +137,10 @@ def create_artist_video(artist_name, token):
 
         # AUDIO COMPONENTS
         composite_audio = []
-        song_clip_snippet = create_song_snippet_clip(
-            song_name, song_id, artist_name)
+        # Create Song Snippet Clip
+        download_audio(f"{song_name} by {artist_name} Official Audio", song_id)
+
+        song_clip_snippet = create_optimal_sound_clip(song_id)
         composite_audio.append(song_clip_snippet)
 
         # Create Sound Effects
@@ -160,5 +173,83 @@ def create_artist_video(artist_name, token):
         clips.append(song_clip)
 
     release = []
-    release.append(process_clips(clips, artist_name, intro_clip))
+    description = f"How many did you get?? #{remove_punc_n_spaces(artist_name).lower()} #guessthesong #songquiz #quiz"
+
+    # Add intro clip at the beginning
+    clips.insert(0, intro_clip)
+
+    # Apply transformation to each clip and create a composite video clip
+    slided_clips = [CompositeVideoClip([clip.fx(transfx.slide_out, 0.4, 'right')])
+                    for clip in clips]
+
+    release.append(process_clips(slided_clips, remove_punc_n_spaces(
+        artist_name), description))
+    return release
+
+
+def create_billboard_video(songs):
+    video_id = "asmr"
+
+    # Download the five videos
+    download_video(
+        f'breaking glass oddly satisfying video cutting soap ice breaking shaving', video_id, 5)
+
+   # Retrieve downloaded videos
+    all_videos = [f for f in listdir(f"{config.ASSET_FILE_PATH}assets/videos")
+                  if isfile(join(f"{config.ASSET_FILE_PATH}assets/videos", f))]
+    background_videos = [
+        f for f in all_videos if f.startswith(video_id + "-")]
+    print(background_videos)
+
+    last_background_video = random.choice(background_videos)
+    intro_clip = create_intro(
+        "Rank the Songs", "rank-the-songs", f"{ASSET_FILE_PATH}assets/videos/{last_background_video}")
+
+    # Begin Creating Clips
+    clips = []
+
+    for i, song in enumerate(songs):
+        song_id = str(hash(remove_punc_n_spaces(song)))
+        newly_selected_background_video = random.choice(background_videos)
+
+        last_background_video = newly_selected_background_video
+
+        composite_audio = []
+        download_audio(f"{song} Official Audio", song_id)
+        song_clip_snippet = create_optimal_sound_clip(song_id)
+        composite_audio.append(song_clip_snippet)
+
+        background_clip = create_background_clip(
+            f"{ASSET_FILE_PATH}assets/videos/{last_background_video}")
+
+        title_clip = TextClip(
+            f'{textwrap.fill(song, CHARACTER_WRAP)}', font=FONT_PATH, fontsize=FONT_SIZE, color='white', stroke_width=2, stroke_color='black') \
+            .set_duration(DURATION).set_fps(FPS).set_position(("center", SIZE[1]//4))
+
+        # Creating the list clip
+        number_list = "\n".join([f"{i}." for i in range(1, 6)])
+        list_clip = TextClip(
+            f'{textwrap.fill(number_list, CHARACTER_WRAP)}',
+            font=FONT_PATH,
+            fontsize=FONT_SIZE,
+            color='white',
+            stroke_width=2,
+            stroke_color='black'
+        ).set_duration(REVEAL_DURATION).set_fps(FPS).set_position(("left", SIZE[1] - 100))
+
+        # Assembling the clips
+        song_clip = CompositeVideoClip(
+            [background_clip, title_clip, list_clip],
+            SIZE).set_duration(DURATION)
+
+        song_clip.audio = CompositeAudioClip(composite_audio)
+        clips.append(song_clip)
+
+    # adds intro and writes to final_videos dir
+    now = datetime.now()
+
+    release = []
+    clips.insert(0, intro_clip)
+    release.append(process_clips(clips, remove_punc_n_spaces(now.strftime("%m/%d/%Y, %H:%M:%S")),
+                                 "What were your top fives??"))
     return release
