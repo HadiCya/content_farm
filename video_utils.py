@@ -94,3 +94,55 @@ def create_background_clip(file_path):
     background_clip = background_clip.set_position(
         "center").resize(SIZE[1] / background_clip.size[1])
     return background_clip
+
+
+def create_image_n_text_clips(duration, width, height, image_file_path, text):
+    image_clip = ImageClip(image_file_path).set_duration(
+        duration).set_fps(FPS).resize(width=width, height=height).set_position("center")
+    name_clip = TextClip(textwrap.fill(text, CHARACTER_WRAP), font=FONT_PATH, fontsize=int(FONT_SIZE), color='white').set_duration(
+        duration).set_fps(FPS).set_position(("center", (SIZE[1]//4)*3))
+
+    return [image_clip, name_clip]
+
+
+def create_tts_clip(text_to_speech_file_path, text):
+    if os.path.isfile(text_to_speech_file_path):
+        print("Text to Speech already downloaded!")
+        text_to_speech = AudioFileClip(text_to_speech_file_path)
+        return text_to_speech
+    try:
+        tts(config.SESSION_ID,
+            req_text=text, filename=text_to_speech_file_path)
+        text_to_speech = AudioFileClip(text_to_speech_file_path)
+    except:
+        print("Error Getting Text To Speech Audio")
+    return text_to_speech
+
+
+def create_intro(title, id, background_clip_file_path, image_url=None, subtitle=None):
+    clips = []
+
+    background_clip = create_background_clip(background_clip_file_path)
+    clips.append(background_clip)
+
+    intro_text = TextClip(title, font=FONT_PATH, fontsize=int(FONT_SIZE), color='white').set_duration(
+        INTRO_DURATION).set_fps(FPS).set_position(("center", SIZE[1]//4))
+    clips.append(intro_text)
+
+    if image_url and subtitle:
+        image_file_path = f"{ASSET_FILE_PATH}assets/images/{id}.jpeg"
+        download_image(image_url, image_file_path, IMAGE_SIZE)
+
+        image_n_title = create_image_n_text_clips(
+            INTRO_DURATION, 600, 600, image_file_path, subtitle)
+        clips.extend(image_n_title)
+
+    intro_clip = CompositeVideoClip(
+        clips, size=SIZE).set_duration(INTRO_DURATION)
+
+    text_to_speech_file_path = f"{ASSET_FILE_PATH}assets/snippets/{id}.mp3"
+    text_to_speech = create_tts_clip(
+        text_to_speech_file_path, f"{title}")
+    intro_clip.audio = CompositeAudioClip([text_to_speech])
+
+    return intro_clip

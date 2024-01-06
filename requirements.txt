@@ -11,3 +11,4 @@ opencv-python
 urllib3
 tiktok-uploader
 pydub
+google-generativeai
