@@ -151,3 +151,5 @@ def generate_imessage_style_conversation(messages, file_path):
     # Save or display the image
     image.save(file_path)
     image.show()
+    # TODO: Get rid of show, return messages list with added parameters for the beginning and end Y positions.
+    # When the program starts creating the movie, it can crop the sections of Y positions, as well as set those durations to the text to speech program
