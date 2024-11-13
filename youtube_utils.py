@@ -1,14 +1,14 @@
 import os
 from apiclient.discovery import build
-from pytube import YouTube
+from pytubefix import YouTube
 from pathlib import Path
 import config
 
 
 def search_video(title, maxResults=3):
+    print(f"Searching For {title}")
     youtube = build('youtube', 'v3',
                     developerKey=config.YOUTUBE_KEY)
-
     request = youtube.search().list(q=title,
                                     part='snippet', type='video', maxResults=50)
     res = request.execute()
@@ -16,10 +16,12 @@ def search_video(title, maxResults=3):
     for video in res['items']:
         yt = YouTube(
             f"https://www.youtube.com/watch?v={video['id']['videoId']}")
-        if not yt.age_restricted and yt.length <= 10*60:
+        print(f"https://www.youtube.com/watch?v={video['id']['videoId']}")
+        if not yt.age_restricted:
             youtubes.append(yt)
         if len(youtubes) == maxResults:
-            return youtubes
+            break
+    print(youtubes)
     return youtubes
 
 
@@ -58,6 +60,7 @@ def download_video(title, id, maxVideos):
         return
 
     youtubes = search_video(title, maxVideos*3)
+    print("yay")
     for i in range(maxVideos):
         yt = youtubes[i]
         try:

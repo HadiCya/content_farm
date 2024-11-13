@@ -9,6 +9,7 @@ moviepy
 pillow==9.5.0
 opencv-python
 urllib3
-tiktok-uploader
 pydub
-google-generativeai
+elevenlabs
+openai
+openapi

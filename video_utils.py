@@ -1,44 +1,34 @@
 import math
 import random
+import textwrap
 from pydub import AudioSegment
 
+from tiktok_voice import tts
 from utils import *
 from spotify_utils import *
 from youtube_utils import *
 from moviepy.editor import *
 import config
 
-DURATION = config.DURATION
-REVEAL_DURATION = config.REVEAL_DURATION
 FPS = config.FPS
 SIZE = config.SIZE
-IMAGE_SIZE = config.IMAGE_SIZE
-FONT_SIZE = config.FONT_SIZE
-INTRO_DURATION = config.INTRO_DURATION
-CHARACTER_WRAP = config.CHARACTER_WRAP
-FONT_PATH = config.FONT_PATH
+STATIC_PATH = config.STATIC_PATH
 ASSET_FILE_PATH = config.ASSET_FILE_PATH
-MIN_AVG_VOLUME = config.MIN_AVG_VOLUME
-SONG_COUNT = config.SONG_COUNT
+
+def create_countdown_clip(number, FONT_NAME, FONT_SIZE, DURATION, REVEAL_DURATION):
+    return TextClip(str(number), font=config.STATIC_PATH + FONT_NAME, fontsize=FONT_SIZE*3, color='white', stroke_color='black').set_duration(1).set_fps(FPS).set_position('center').set_start(DURATION - REVEAL_DURATION - number)
 
 
-def create_countdown_clip(number):
-    return TextClip(str(number), font=FONT_PATH, fontsize=FONT_SIZE*3, color='white', stroke_color='black').set_duration(1).set_fps(FPS).set_position('center').set_start(DURATION - REVEAL_DURATION - number)
-
-
-def process_clips(clips, id, description):
+def process_clips(clips, id):
     # Concatenate and write the final video file
     final_clip = concatenate_videoclips(clips)
     output_file_name = f"{ASSET_FILE_PATH}final_videos/{id}.mp4"
     final_clip.write_videofile(
         output_file_name, audio=True, audio_codec="aac", fps=FPS)
-    return {
-        'video': output_file_name,
-        'description': description
-    }
+    return output_file_name
 
 
-def create_optimal_sound_clip(id):
+def create_optimal_sound_clip(id, DURATION, MIN_AVG_VOLUME):
     MAX_TRIES = 20  # Define a maximum limit for tries
 
     # Load audio file
@@ -85,21 +75,22 @@ def create_optimal_sound_clip(id):
     return final_audio_clip
 
 
-def create_background_clip(file_path):
+def create_background_clip(file_path, BACKGROUND_DURATION):
     background_clip = VideoFileClip(file_path, audio=False)
-    max_start_time = max(10, background_clip.duration - DURATION - 10)
+    max_start_time = max(10, background_clip.duration -
+                         BACKGROUND_DURATION - 10)
     random_start_time = random.randint(10, int(max_start_time))
     background_clip = background_clip.subclip(
-        random_start_time, random_start_time + DURATION).set_duration(DURATION)
+        random_start_time, random_start_time + BACKGROUND_DURATION).set_duration(BACKGROUND_DURATION)
     background_clip = background_clip.set_position(
         "center").resize(SIZE[1] / background_clip.size[1])
     return background_clip
 
 
-def create_image_n_text_clips(duration, width, height, image_file_path, text):
+def create_image_n_text_clips(duration, width, height, image_file_path, text, CHARACTER_WRAP, FONT_NAME, FONT_SIZE):
     image_clip = ImageClip(image_file_path).set_duration(
         duration).set_fps(FPS).resize(width=width, height=height).set_position("center")
-    name_clip = TextClip(textwrap.fill(text, CHARACTER_WRAP), font=FONT_PATH, fontsize=int(FONT_SIZE), color='white').set_duration(
+    name_clip = TextClip(textwrap.fill(text, CHARACTER_WRAP), font=config.STATIC_PATH + FONT_NAME, fontsize=int(FONT_SIZE), color='white').set_duration(
         duration).set_fps(FPS).set_position(("center", (SIZE[1]//4)*3))
 
     return [image_clip, name_clip]
@@ -119,13 +110,13 @@ def create_tts_clip(text_to_speech_file_path, text):
     return text_to_speech
 
 
-def create_intro(title, id, background_clip_file_path, image_url=None, subtitle=None):
+def create_intro(title, id, background_clip_file_path, FONT_NAME, FONT_SIZE, INTRO_DURATION, IMAGE_SIZE, image_url=None, subtitle=None):
     clips = []
 
-    background_clip = create_background_clip(background_clip_file_path)
+    background_clip = create_background_clip(background_clip_file_path, INTRO_DURATION)
     clips.append(background_clip)
 
-    intro_text = TextClip(title, font=FONT_PATH, fontsize=int(FONT_SIZE), color='white').set_duration(
+    intro_text = TextClip(title, font=config.STATIC_PATH + FONT_NAME, fontsize=int(FONT_SIZE), color='white').set_duration(
         INTRO_DURATION).set_fps(FPS).set_position(("center", SIZE[1]//4))
     clips.append(intro_text)
 
@@ -134,7 +125,7 @@ def create_intro(title, id, background_clip_file_path, image_url=None, subtitle=
         download_image(image_url, image_file_path, IMAGE_SIZE)
 
         image_n_title = create_image_n_text_clips(
-            INTRO_DURATION, 600, 600, image_file_path, subtitle)
+            INTRO_DURATION, 600, 600, image_file_path, subtitle, 20, FONT_NAME, FONT_SIZE)
         clips.extend(image_n_title)
 
     intro_clip = CompositeVideoClip(
